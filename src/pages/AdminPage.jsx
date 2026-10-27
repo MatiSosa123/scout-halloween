@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, UserPlus, Trash2, CheckCircle2, Circle, Download, LogOut, Ghost, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { Search, UserPlus, Trash2, CheckCircle2, Circle, Download, LogOut, Ghost, Copy, Check, X } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -10,7 +10,7 @@ function AdminPage() {
   const [busqueda, setBusqueda] = useState('');
   const [orden, setOrden] = useState('default');
   
-  // Estados para el panel de Alias
+  // Estado para el Modal de Alias
   const [mostrarAlias, setMostrarAlias] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
@@ -28,9 +28,15 @@ function AdminPage() {
   }, []);
 
   const copiarAlias = () => {
-    navigator.clipboard.writeText("matias-sosa.mp");
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
+    // Envolvemos en try/catch por si el celular bloquea el portapapeles
+    try {
+      navigator.clipboard.writeText("matias-sosa.mp");
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch (error) {
+      console.error("El navegador bloqueó la copia", error);
+      alert("Tu celular no permite copiar automáticamente. Por favor, seleccioná el texto y copialo manualmente.");
+    }
   };
 
   const exportarACSV = () => {
@@ -142,26 +148,38 @@ function AdminPage() {
           </div>
         </div>
 
-        {/* Botón y Panel de Alias */}
-        <div className="flex flex-col gap-2">
+        {/* Botón para abrir el Modal */}
+        <div className="w-full md:w-auto">
           <button
-            onClick={() => setMostrarAlias(!mostrarAlias)}
-            className="w-full md:w-auto self-start bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 border border-slate-600 transition-colors shadow-lg"
+            onClick={() => setMostrarAlias(true)}
+            className="w-full md:w-auto bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 border border-slate-600 transition-colors shadow-lg"
           >
-            {mostrarAlias ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            {mostrarAlias ? 'Ocultar Alias de Pago' : 'Mostrar Alias de Pago'}
+            <Copy size={20} />
+            Mostrar Alias de Pago
           </button>
+        </div>
 
-          {mostrarAlias && (
-            <div className="bg-slate-800 p-6 rounded-lg shadow-md border-2 border-dashed border-orange-500/50">
-              <h3 className="text-orange-400 font-semibold mb-4 text-center text-lg">Alias para Transferencias</h3>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-                <span className="font-mono text-2xl md:text-3xl font-bold text-white select-all bg-slate-900 px-6 py-3 rounded-lg border border-slate-700 tracking-wider shadow-inner">
+        {/* MODAL FLOTANTE DE ALIAS */}
+        {mostrarAlias && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-slate-800 p-6 rounded-2xl shadow-2xl border-2 border-orange-500 w-full max-w-md relative animate-in fade-in zoom-in duration-200">
+              
+              <button 
+                onClick={() => setMostrarAlias(false)}
+                className="absolute top-3 right-3 text-slate-400 hover:text-white bg-slate-700 rounded-full p-1"
+              >
+                <X size={24} />
+              </button>
+
+              <h3 className="text-orange-400 font-bold text-xl text-center mb-6 mt-2">Alias para Transferencias</h3>
+              
+              <div className="flex flex-col items-center gap-4">
+                <span className="font-mono text-2xl font-bold text-white select-all bg-slate-900 px-6 py-3 rounded-lg border border-slate-700 tracking-wider shadow-inner w-full text-center">
                   matias-sosa.mp
                 </span>
                 <button
                   onClick={copiarAlias}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors w-full md:w-auto justify-center ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors w-full justify-center ${
                     copiado ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                 >
@@ -169,9 +187,13 @@ function AdminPage() {
                   {copiado ? '¡Copiado!' : 'Copiar Alias'}
                 </button>
               </div>
+
+              <p className="text-center text-slate-400 text-sm mt-6">
+                Mostrale esta pantalla al padre para que transfiera.
+              </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Estadísticas */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-4">
